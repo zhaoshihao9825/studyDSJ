@@ -38,6 +38,67 @@
     </div>
   </div>
 
+
+  <!-- 使用bootstrap的模态框 -->
+  <div class="modal fade" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+              aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title">温馨提醒</h4>
+        </div>
+        <div class="modal-body">
+          <p></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-success" data-dismiss="modal">确认</button>
+          <!-- <button type="button" class="btn btn-primary">确认</button> -->
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
+  <script src="./libs/http.js"></script>
+  <script>
+    $(function () {
+      $('.input_sub').on('click', function (e) {
+        e.preventDefault();//清除默认跳转
+        //获取用户输入的用户名和密码
+        var username = $('.input_txt').val().trim();
+        var password = $('.input_pass').val().trim();
+        //判断非空
+        if (username == '' || password == '') {
+          $('p').text('账号和密码不能为空!')
+          $('.fade').modal();
+          return;
+        };
+        //发送ajax请求
+        $.ajax({
+          type: 'post',
+          url: window.BigNew.user_login,
+          data: {
+            username: username,
+            password: password
+          },
+          success: function (backData) {
+            $('p').text(backData.msg);
+            $('.fade').modal();
+            if (backData.code == 200) {
+              //localStorage - 没有时间限制的数据存储
+              //setItem() 作为 Storage 接口的方法，接受一个键名和值作为参数，将会把键名添加到存储中，如果键名已存在，则更新其对应的值。
+              window.localStorage.setItem('token', backData.token);
+
+              //此事件在模态框被隐藏(并且同时在 CSS 过滤效果完成)之后被触发
+              $('.fade').on('hidden.bs.modal', function (e) {
+                window.location.href = './index.html';
+              })
+            }
+          }
+        })
+      })
+    })
+  </script>
 </body>
 
 </html>
