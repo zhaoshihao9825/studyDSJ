@@ -68,6 +68,71 @@
             </form>
         </div>
     </div>
+
+    <script src="./libs/http.js"></script>
+    <script>
+        $(function () {
+            //1.一进到个人中心页面,就显示登录的这个管理员的所以信息
+            $.ajax({
+                type: 'get',
+                url: BigNew.user_detail,
+                success: function (backData) {
+                    if (backData.code == 200) {
+                        for (var key in backData.data) {
+                            $('input.' + key).val(backData.data[key]);
+                            $('img.user_pic').attr('src', backData.data.userPic);
+                        }
+                    }
+                }
+            });
+
+            //2.图片预览
+            //给图片的input:file按钮设置一个值改变事件
+            $('#exampleInputFile').on('change', function () {
+                var fileIcon = this.files[0];//获取文件
+                //把这个文件生成一个url
+                var url = URL.createObjectURL(fileIcon);
+                //把url交给预览用户的img的src
+                $('img.user_pic').attr('src', url);
+            });
+
+            //3.点击按钮完成修改
+            $('button.btn-edit').on('click', function (e) {
+                e.preventDefault();//阻止默认跳转
+                //创建一个formData对象
+                var fd = new FormData($('#form')[0]);//form表单dom对象
+                //fd对象获取form表单中所有带有name属性的标签值,这个值要发送到接口去,所以这些name属性的取值和接口的参数名要一致
+                $.ajax({
+                    type: 'post',
+                    url: BigNew.user_edit,
+                    data: fd,
+                    //form表单提交ajax请求必须要设置两个属性
+                    contentType: false,
+                    processData: false,
+                    success: function (backData) {
+                        if (backData.code == 200) {
+                            alert('修改成功');
+                            //第一种解决办法:刷新一下页面
+                            // parent.window.location.reload();
+
+                            //第二种解决办法:发送ajax请求,获取网站管理员的个人信息
+                            $.ajax({
+                                url: BigNew.user_info,
+                                success: function (backData) {
+                                    if (backData.code == 200) {
+                                        //给父页面的显示个人信息的标签设置新的值
+                                        parent.$('.user_info>span>i').text(backData.data.nickname);
+                                        parent.$('.user_info>img').attr('src', backData.data.userPic);
+                                        parent.$('.user_center_link>img').attr('src', backData.data.userPic);
+                                    }
+                                }
+                            })
+                        }
+                    }
+                })
+            })
+        })
+    </script>
 </body>
 
 </html>
