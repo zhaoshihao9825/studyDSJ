@@ -44,12 +44,177 @@
                     <tr>
                         <td colspan="3" class="text-center">
                             <a href="javascript:void(0)" class="btn btn-success" id="xinzengfenlei" data-toggle="modal"
-                                data-target="#myModal">新增分类</a>
+                                data-target="#exampleModal">新增分类</a>
                         </td>
                     </tr>
                 </tfoot>
             </table>
         </div>
     </div>
+
+    <!-- bootstrap的模态框 -->
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="exampleModalLabel">新增类别</h4>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <input type="hidden" id="yincangyu">
+                        <div class="form-group">
+                            <label for="recipient-name" class="control-label">文章分类名称:</label>
+                            <input type="text" class="form-control" id="recipient-name">
+                        </div>
+                        <div class="form-group">
+                            <label for="message-text" class="control-label">文章分类别名:</label>
+                            <input class="form-control" id="message-text"></input>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-quxiao btn-default" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary btn-queren">确认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 文章类别模板 -->
+    <script id="moban" type="text/html">
+    {{each data v}}
+    <tr>
+        <td>{{v.name}}</td>
+        <td>{{v.slug}}</td>
+        <td class="text-center">
+            <a href="javascript:void(0)" data-toggle="modal" class=" btn btn-info btn-xs" data-id = {{v.id}} data-toggle="modal" data-target="#exampleModal">编辑</a>
+            <a href="javascript:void(0)" class="btn btn-danger btn-xs"  data-id = {{v.id}}>删除</a>
+        </td>
+    </tr>
+    {{/each}}
+    </script>
+
+    <script src="./libs/http.js"></script>
+    <script>
+        $(function () {
+            //1.一进入文章类别页面,就显示所有的文章类别
+            getData();
+
+            function getData() {
+                $.ajax({
+                    type: 'get',
+                    url: BigNew.category_list,
+                    success: function (backData) {
+                        // console.log(backData);
+                        if (backData.code == 200) {
+                            //获取所有的文章类别信息后,通过模板引擎渲染到页面上
+                            var resHtml = template('moban', backData);
+                            $('tbody').html(resHtml);
+                        }
+                    }
+                });
+            }
+
+            //2.到底点击的是新增分类 / 编辑 弹出的模态框
+            //Bootstrap 的模态框类提供了一些事件用于监听并执行自己的代码
+            //show.bs.modal 事件:
+            // show 方法调用之后立即触发该事件。如果是通过点击某个作为触发器的元素，则此元素可以通过事件的 relatedTarget 属性进行访问。
+            $('#exampleModal').on('show.bs.modal', function (e) {
+                //就可以通过e.relatedTarget知道你是新增分类,还是编辑按钮弹出来的模态框
+                // console.log(e.relatedTarget);
+                if (e.relatedTarget === $('#xinzengfenlei')[0]) {
+                    $('#exampleModalLabel').text('新增分类类别');
+                    $('.btn-queren').text('新增').addClass('btn-primary').removeClass('btn-success');
+                    //reset() 方法可把表单中的元素重置为它们的默认值
+                    $('#exampleModal form')[0].reset();
+                } else {
+                    $('#exampleModalLabel').text('编辑分类类别');
+                    $('.btn-queren').text('编辑').addClass('btn-success').removeClass('btn-primary');
+
+                    //把编辑的当前一行的 文章类别名 和 别名 显示在模态框中
+                    // console.log($(e.relatedTarget).parent().prev().prev().text());
+                    $('#recipient-name').val($(e.relatedTarget).parent().prev().prev().text());
+                    $('#message-text').val($(e.relatedTarget).parent().prev().text());
+                    $('#yincangyu').val($(e.relatedTarget).attr('data-id'))
+                }
+            });
+
+            //3.给模态框中的 取消按钮设置一个点击事件,把元素重置
+            $('#exampleModal .btn-quxiao').on('click', function () {
+                $('#exampleModal form')[0].reset();
+            });
+
+            //4.给模态框中的 新增/编辑 按钮设置点击事件
+            $('.btn-queren').on('click', function () {
+                //判断是否拥有这个类:btn-primary,如果有就是新增,否则就是编辑
+                if ($(this).hasClass('btn-primary')) {//hasClass(类名) 方法判断这个标签有没有这个类名,有就返回true,没有就返回flase
+
+                    //4.1 获取用户输入的文本
+                    var name = $('#recipient-name').val().trim();
+                    var slug = $('#message-text').val().trim();
+
+                    // 4.2 发送ajax请求
+                    $.ajax({
+                        type: 'post',
+                        url: BigNew.category_add,
+                        data: {
+                            name: name,
+                            slug: slug
+                        },
+                        success: function (backData) {
+                            if (backData.code == 201) {
+                                getData();
+                                $('#exampleModal').modal('hide');
+                            }
+                        }
+                    })
+                } else {
+                    var name = $('#recipient-name').val().trim();
+                    var slug = $('#message-text').val().trim();
+                    var id = $('#yincangyu').val().trim();
+                    $.ajax({
+                        type: 'post',
+                        url: BigNew.category_edit,
+                        data: {
+                            id: id,
+                            name: name,
+                            slug: slug
+                        },
+                        success: function (backData) {
+                            if (backData.code == 200) {
+                                getData();
+                                $('#exampleModal').modal('hide');
+                            }
+                        }
+                    })
+                }
+            });
+
+            //5.删除分类 使用委托注册
+            $('tbody').on('click', '.btn-danger', function () {
+                if (confirm('你确定要删除吗?')) {
+                    //获取要删除的分类ID
+                    var id = $(this).attr('data-id');
+                    //发送ajax请求
+                    $.ajax({
+                        type: 'post',
+                        url: BigNew.category_delete,
+                        data: {
+                            id: id
+                        },
+                        success: function (backData) {
+                            if (backData.code == 204) {
+                                getData();
+                            }
+                        }
+                    })
+                }
+            })
+
+        })
+    </script>
 
 </html>
